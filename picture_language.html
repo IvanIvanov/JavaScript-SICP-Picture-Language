@@ -1,0 +1,24 @@
+<html>
+  <head>
+    <script src="picture_language.js" type="text/javascript">
+    </script>
+    <script type="text/javascript">
+      function startIt() {
+        var painter1 = pL.makeCanvasGeorgePainter(
+            document.getElementById("canvas1"));
+        var painter2 = pL.makeCanvasGeorgePainter(
+            document.getElementById("canvas2"));
+        var frame = new pL.Frame(
+            new pL.Vector(0, 0), new pL.Vector(1, 0), new pL.Vector(0, 1));
+        (pL.squareLimit(painter1, 4))(frame);
+        (pL.squashInwards(pL.squareLimit(painter2, 4)))(frame); 
+      };      
+    </script>
+  </head>
+
+  <body onload="startIt()">
+    <canvas id="canvas1" width="300" height="300"></canvas>
+    <canvas id="canvas2" width="300" height="300"></canvas>
+  </body>
+</html>
+
