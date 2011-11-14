@@ -21,7 +21,7 @@
   *
   *
   *
-  * This library is a JavaScript adaptation of the Picture Language from
+  * This library is a JavaScript Rhino adaptation of the Picture Language from
   * the book "Structure and Interpretation of Computer Programs", Section 2.2.4:
   * http://http://mitpress.mit.edu/sicp/full-text/book/book.html
   *
@@ -211,21 +211,21 @@ pL.makeSegmentPainter = function(segments, drawSegment) {
   };
 };
 
-pL.makeCanvasXPainter = function(canvas) {
+pL.makeImageXPainter = function(image) {
   return pL.makeSegmentPainter([
       new pL.Segment(new pL.Vector(0, 0), new pL.Vector(1, 1)),
       new pL.Segment(new pL.Vector(0, 1), new pL.Vector(1, 0))],
-      pL.makeCanvasDrawSegment(canvas));
+      pL.makeImageDrawSegment(image));
 };
 
-pL.makeCanvasYPainter = function(canvas) {
+pL.makeImageYPainter = function(image) {
   return pL.makeSegmentPainter([
       new pL.Segment(new pL.Vector(0, 0), new pL.Vector(1.0, 1.0)),
       new pL.Segment(new pL.Vector(0, 1), new pL.Vector(0.5, 0.5))],
-      pL.makeCanvasDrawSegment(canvas));
+      pL.makeImageDrawSegment(image));
 };
 
-pL.makeCanvasGeorgePainter = function(canvas) {
+pL.makeImageGeorgePainter = function(image) {
   return pL.makeSegmentPainter([
       new pL.Segment(new pL.Vector(0.25, 0.00), new pL.Vector(0.37, 0.37)),
       new pL.Segment(new pL.Vector(0.40, 0.00), new pL.Vector(0.50, 0.25)),
@@ -244,76 +244,59 @@ pL.makeCanvasGeorgePainter = function(canvas) {
       new pL.Segment(new pL.Vector(0.37, 0.37), new pL.Vector(0.30, 0.50)),
       new pL.Segment(new pL.Vector(0.30, 0.50), new pL.Vector(0.12, 0.37)),
       new pL.Segment(new pL.Vector(0.12, 0.37), new pL.Vector(0.00, 0.50))],
-      pL.makeCanvasDrawSegment(canvas));
+      pL.makeImageDrawSegment(image));
 };
 
-pL.makeCanvasDrawSegment = function(canvas) {
-  var height = canvas.height;
-  var width = canvas.width;
-  var context = canvas.getContext('2d');
-
+pL.makeImageDrawSegment = function(image) {
+  var height = image.getHeight();
+  var width = image.getWidth();
+  var graphics = image.createGraphics();
+  graphics.setColor(java.awt.Color.BLACK);
   return function(segment) {
     var x1 = Math.floor(segment.start.x * (width - 1));
     var y1 = Math.floor((height - 1) - segment.start.y * (height - 1));
     var x2 = Math.floor(segment.end.x * (width - 1));
     var y2 = Math.floor((height - 1) - segment.end.y * (height - 1));
-    context.beginPath();
-    context.moveTo(x1, y1);
-    context.lineTo(x2, y2);
-    context.stroke();
-    context.closePath();
+    graphics.drawLine(x1, y1, x2, y2);
   };
 };
 
-pL.makeCanvasDrawPixel = function(canvas) {
-  return function(x, y, r, g, b, a) {
-    var row = Math.floor((1 - y) * canvas.height);
-    var col = Math.floor(x * canvas.width);
-    var context = canvas.getContext('2d');
-    var imageData = context.getImageData(col, row, 1, 1);
-    imageData.data[0] = r;
-    imageData.data[1] = g;
-    imageData.data[2] = b;
-    imageData.data[3] = a;
-    context.putImageData(imageData, col, row);
+pL.makeImageDrawPixel = function(image) {
+  var height = image.getHeight();
+  var width = image.getWidth();
+  return function(x, y, rgb) {
+    var row = Math.floor((1 - y) * height);
+    var col = Math.floor(x * width);
+    image.setRGB(Math.min(col, width - 1), Math.min(row, height - 1), rgb);
   };
 };
 
 pL.makeImagePainter = function(image, drawPixel) {
-  var dummyCanvas = document.createElement('canvas');
-  dummyCanvas.height = image.height;
-  dummyCanvas.width = image.width;
-  var context = dummyCanvas.getContext('2d');
-  context.drawImage(image, 0, 0);
-  var imageData = context.getImageData(
-      0, 0, dummyCanvas.width, dummyCanvas.height);
-
+  var height = image.getHeight();
+  var width = image.getWidth();
   var toVector = function(row, col) {
-    var x = col / image.width;
-    var y = (image.height - row - 1) / image.height;
+    var x = col / width;
+    var y = (height - row - 1) / height;
     return new pL.Vector(x, y);
   };
 
   return function(frame) {
     var row;
     var col;
-    for (row = 0; row < image.height; row++) {
-      for (col = 0; col < image.width; col++) {
+    for (row = 0; row < height; row++) {
+      for (col = 0; col < width; col++) {
         var v = frame.coordMap(toVector(row, col));
-        var index = 4 * (row * image.width + col);
-        var r = imageData.data[index];
-        var g = imageData.data[index + 1];
-        var b = imageData.data[index + 2];
-        var a = imageData.data[index + 3];
-        drawPixel(v.x, v.y, r, g, b, a);
+        var rgb = image.getRGB(col, row);
+        drawPixel(v.x, v.y, rgb);
       }
     }
   };
 };
 
-pL.makeCanvasImagePainter = function(targetCanvas, image) {
+pL.makeImageToImagePainter = function(targetImage, image) {
   return pL.makeImagePainter(
       image,
-      pL.makeCanvasDrawPixel(targetCanvas));
+      pL.makeImageDrawPixel(targetImage));
 };
+
 
